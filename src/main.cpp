@@ -53,11 +53,12 @@ uint8_t calcCheckSum(char *packet, size_t size)
   return res;
 }
 
+/// wait to empty write Serial0 buffer
 void writeWait()
 {
-  while (Serial.availableForWrite() == 0)
+  while (Serial.availableForWrite() < 8)
   {
-    delay(100);
+    delay(10); // << this is a problem. if decrease to 1 - no problem.
   }
 }
 
@@ -80,11 +81,13 @@ void read()
       uint8_t ss = getCheckSum(txpacket, counter);
       if (s == ss)
       {
+        writeWait();
         Serial.print("1");
         lineCounter++;
       }
       else
       {
+        writeWait();
         Serial.println();
         Serial.print("ERROR ");
         Serial.print(s, HEX);
