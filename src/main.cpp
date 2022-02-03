@@ -58,7 +58,7 @@ void writeWait()
 {
   while (Serial.availableForWrite() < 8)
   {
-    delay(10); // << this is a problem. if decrease to 1 - no problem.
+    delay(6); // << This delay is a problem. If decrease to 5 ms - no problem.
   }
 }
 
