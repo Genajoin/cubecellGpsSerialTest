@@ -1,20 +1,23 @@
 #include <Arduino.h>
 #include "GPS_Air530Z.h"
+
 #define BUFFER_SIZE 500
+
 char txpacket[BUFFER_SIZE];
 int counter = 0;
 int lineCounter = 0;
+bool isWrite = false;
+uint32_t timeCounter = 0;
 
 void setup()
 {
   pinMode(GPIO14, OUTPUT);
   digitalWrite(GPIO14, LOW);
-
   Serial.begin(115200);
   Serial1.begin(9600);
 }
 
-uint8_t getChar(char c)
+uint8_t getHexChar(char c)
 {
   if (c <= '9')
     return c - '0';
@@ -30,7 +33,7 @@ uint8_t getCheckSum(char *packet, size_t size)
   {
     if (packet[i] == '*' && i + 2 < size)
     {
-      res = (getChar(packet[i + 1]) << 4) | getChar(packet[i + 2]);
+      res = (getHexChar(packet[i + 1]) << 4) | getHexChar(packet[i + 2]);
       break;
     }
   }
@@ -40,15 +43,29 @@ uint8_t getCheckSum(char *packet, size_t size)
 uint8_t calcCheckSum(char *packet, size_t size)
 {
   uint8_t res = 0;
-  for (size_t i = 1; i < size; i++)
+  for (size_t i = 0; i < size; i++)
   {
-    res ^= packet[i];
+    if (packet[i] == '*')
+      break;
+    if (packet[i] != '$')
+      res ^= packet[i];
   }
   return res;
 }
 
-void t2()
+void writeWait()
 {
+  while (Serial.availableForWrite() == 0)
+  {
+    delay(100);
+  }
+}
+
+/// read and check GPS data
+void read()
+{
+  if (counter == BUFFER_SIZE)
+    counter = 0;
 
   while (Serial1.available() > 0)
   {
@@ -59,11 +76,11 @@ void t2()
       return;
     if (c == '\r')
     {
-      uint8_t s = calcCheckSum(txpacket, counter - 3);
+      uint8_t s = calcCheckSum(txpacket, counter);
       uint8_t ss = getCheckSum(txpacket, counter);
       if (s == ss)
       {
-        Serial.print(".");
+        Serial.print("1");
         lineCounter++;
       }
       else
@@ -83,27 +100,49 @@ void t2()
   }
 }
 
-void lc()
+/// Print something to Serial0
+void write()
 {
-  if (lineCounter > 120)
+  writeWait();
+  Serial.write('0');
+  lineCounter++;
+}
+
+// switch mode every 3 second
+bool writeMode()
+{
+  if (millis() - timeCounter > 3000)
+  {
+    timeCounter = millis();
+    isWrite = !isWrite;
+    writeWait();
+    if (isWrite)
+    {
+      Serial.println("\r\nWrite something to Serial0.");
+    }
+    else
+    {
+      Serial.println("\r\nSilent mode to Serial0.");
+    }
+  }
+  return isWrite;
+}
+
+// Line formating
+void lineFormat()
+{
+  if (lineCounter > 100)
   {
     lineCounter = 0;
     Serial.println();
   }
 }
 
-void t3()
-{
-  while (Serial.availableForWrite() == 0) {
-      delay(16);
-  }
-  Serial.write('+');
-  lineCounter++;
-}
-
+/// LOOP
 void loop()
 {
-  t2();
-  t3();
-  lc();
+  read();
+  if (writeMode())
+    write();
+  lineFormat();
 }
