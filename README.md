@@ -6,7 +6,7 @@ Serial port 1 loses GPS data packets if you send data through port 0 at the same
 Programm printing "0" to Serial0 and at the same time checking recieved nmea checksum data. If it ok is printing "1". Else printing "error".
 
 Programm protocol:
-
+```
 Write something to Serial0.
 0000000000000000000000000000000000000000000000000
 0000000000000000000000000000000
@@ -21,3 +21,4 @@ Silent mode to Serial0.
 Write something to Serial0.
 00000000000000000000000000000000000000000000000000
 ERROR 2A<>7A $GNGGA,,,N\*7A
+```
