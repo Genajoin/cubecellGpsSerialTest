@@ -9,6 +9,17 @@ int lineCounter = 0;
 bool isWrite = false;
 uint32_t timeCounter = 0;
 
+/// wait to empty write Serial0 buffer
+/// problematic function
+void writeWait()
+{
+  while (Serial.availableForWrite() < 8)
+  {
+    // This delay is a rx buffer problem. If decrease to 5 ms - no problem.
+    delay(6);
+  }
+}
+
 void setup()
 {
   pinMode(GPIO14, OUTPUT);
@@ -51,15 +62,6 @@ uint8_t calcCheckSum(char *packet, size_t size)
       res ^= packet[i];
   }
   return res;
-}
-
-/// wait to empty write Serial0 buffer
-void writeWait()
-{
-  while (Serial.availableForWrite() < 8)
-  {
-    delay(6); // << This delay is a problem. If decrease to 5 ms - no problem.
-  }
 }
 
 /// read and check GPS data
